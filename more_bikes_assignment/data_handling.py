@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 from zlib import crc32
+import matplotlib.pyplot as plt
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import StratifiedShuffleSplit
 
 
@@ -35,6 +37,36 @@ def strat_split_data(station_data):
         strat_dev_set = station_data.loc[dev_index]
     return strat_train_set, strat_dev_set
 
+# Display functions
+# DIsplay train test distribution
+
+def display_train_test_dist(train, dev, feature, target):
+    fig, ax = plt.subplots()
+    train.plot.scatter(feature, target, color="red", marker="o", ax=ax, label="train")
+    dev.plot.scatter(feature, target, color="blue", marker="x", ax=ax, label="development")
+    ax.legend();
+
+def scatter_plot(df, feature, target):
+    df.plot.scatter(feature, target);
+
+# Display dimensions and length of train and dev sets
+
+def display_shapes(train_df, dev_df):
+    print('Train: {train}\nDev: {dev}'.format(
+            train=train_df.shape,
+            dev=dev_df.shape))
+
+# Functions to print null/nan information
+
+def print_null_locs(df, feature):
+    print('Null locations:\n{locs}'.format(
+            locs=get_null_locs(df, feature)))
+
+def print_null_indication(df, feature):
+    print('Null value: {boolean}\nNull value count: {count}'.format(
+            boolean=are_nulls(df, feature),
+            count=count_nulls(df, feature)))
+
 
 # Functions to handle null values
 
@@ -47,19 +79,16 @@ def count_nulls(df, feature):
 def get_null_locs(df, feature):
     return df[df[feature].isnull()].index.tolist()
 
-# Functions to print null/nan information
+# Need to convert to a class...
+# Functions to handle missing values
 
-def print_null_locs(df, feature):
-    locs = get_null_locs(df, feature)
-    print(locs)
+def simple_imputer(df, feature, strategy):
+    imputer = SimpleImputer(strategy=strategy)
+    imputer.fit(df[[feature]])
+    transformed_feature = imputer.transform(df[[feature]])
+    return pd.DataFrame(transformed_feature, columns=df.columns)
 
-def print_null_indication(df, feature):
-    print('Null value: {boolean}\nNull value count: {count}'.format(
-            boolean=are_nulls(df, feature),
-            count=count_nulls(df, feature)))
-
-
-
+# need a method to call imputer.statistics_ etc.
 
 if __name__ == "__main__":
     pass
