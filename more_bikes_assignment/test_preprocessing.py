@@ -99,9 +99,7 @@ def test_clean_all_features():
     # Check all the same stuff but for the second feature, 'rain'
     assert(get_value(df, 'rain', 0)==1)
     assert(get_value(df, 'rain', 1)==2)
-
     assert(get_value(df, 'rain', 2)==((2+4)/2))
-    
     assert(get_value(df, 'rain', 4)== ((4+7)/2))
     assert(get_value(df, 'rain', 5)== ((((4+7)/2) + 7)/2))
 
@@ -139,7 +137,67 @@ def test_clean_holiday():
 
     assert(df['holiday'].iloc[0]==0)
     assert(df['holiday'].iloc[1]==1)
-
-
     assert(df['holiday'].iloc[2]==0)
     assert(df['holiday'].iloc[4]==0)
+
+
+def test_forward_average():
+
+    data = {
+        'weekhour':[0, 1, 2, 0, 1, 2, 0, 1, 2],
+         # included bikes_3h_ago to ensure additional features dont
+         # mess with the target feature...
+        'bikes_3h_ago':[10, 20, 40, 60, 80, 100, 70, np.nan, np.nan],
+        'bikes':[10, 20, 40, 60, 80, 100, np.nan, np.nan, np.nan]
+        }
+
+    df = pd.DataFrame(data)
+
+    fmean = calculate_forward_average(df, 'weekhour')
+
+    assert(fmean.shape==(3,3))
+
+    assert(fmean['weekhour'].iloc[0]==0)
+    assert(fmean['weekhour'].iloc[1]==1)
+    assert(fmean['weekhour'].iloc[2]==2)   
+    
+    assert(fmean['bikes'].iloc[0]==35)
+    assert(fmean['bikes'].iloc[1]==50)
+    assert(fmean['bikes'].iloc[2]==70)
+
+    
+def test_get_forward_average():
+
+    data = {
+        'weekhour':[0, 1, 2, 0, 1, 2, 0, 1, 2],
+        'bikes':[10, 20, 40, 60, 80, 100, np.nan, np.nan, np.nan]
+        }
+
+    df = pd.DataFrame(data)
+    fmean = calculate_forward_average(df, 'weekhour')
+
+    average_1 = get_forward_average(fmean, 'weekhour', 2, 'bikes')
+    average_2 = get_forward_average(fmean, 'weekhour', 1, 'bikes')
+    average_3 = get_forward_average(fmean, 'weekhour', 0, 'bikes')
+
+    assert(average_1==70)
+    assert(average_2==50)
+    assert(average_3==35)
+
+
+def test_apply_forward_average():
+
+    data = {
+        'weekhour':[0, 1, 2, 0, 1, 2, 0, 1, 2],
+        'bikes':[10, 20, 40, 60, 80, 100, np.nan, np.nan, np.nan]
+        }
+
+    df = pd.DataFrame(data)
+
+    apply_forward_average(df, nan_feature='bikes', weekhour='weekhour')
+
+    assert(df['bikes'].iloc[5]==100)
+    assert(df['bikes'].iloc[6]==35)
+    assert(df['bikes'].iloc[7]==50)
+    assert(df['bikes'].iloc[8]==70)
+

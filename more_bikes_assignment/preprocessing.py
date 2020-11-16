@@ -6,14 +6,17 @@ import numpy as np
 ################################################
 ''' Functions for processing timestamp data'''
 
+def timestamp(ts):
+    date = datetime.utcfromtimestamp(ts)
+    return date.day, date.hour
+
 def get_timestamp(df, index):
     '''
     Input: dataframe, row index
     Output: day and hour from corresponding timestamp as ints
     '''
     ts = df['timestamp'].iloc[index]
-    date = datetime.utcfromtimestamp(ts)
-    return date.day, date.hour
+    return timestamp(ts)
 
 ################################################
 '''Utility functions'''
@@ -139,5 +142,41 @@ def clean_holiday(df, feature):
 ##############################################
 ''' Replacing first week of data with forward average'''
 
+def calculate_forward_average(df, feature):
+    '''
+    Input: dataframe, feature name (or column)
+    Output: dataframe with the values grouped by unique feature values and
+            and means for all other features computed unique value computed 
+    '''
+    return pd.DataFrame(df.groupby([feature]).mean().reset_index())
 
- 
+def get_forward_average(df, weekhour, wh_value, target_var_mean):
+    '''
+    Input: dataframe, weekhour (feature or column heading), weekhour value (wh_value)
+           target feature name (target_var_name)
+    Output: The value of the mean for the target variable (for example, an average 
+            of 20 bikes at weekhour 120) 
+    '''
+    mean = (lambda x: x == wh_value)
+    boolean_df = df[weekhour].apply(mean)
+    arr = np.flatnonzero(boolean_df)
+    index = arr.item()
+    return df[target_var_mean].iloc[index]
+
+def apply_forward_average(df, nan_feature, weekhour):
+    '''
+    Input: dataframe, feature name containing NaN values, weekhour feature name
+    Output: modified dataframe where all NaN values are replaced with forward averages
+    '''
+    null_locations = get_null_locs(df, nan_feature)
+    fmean = calculate_forward_average(df, weekhour)
+    for loc in null_locations:
+        week_hour_value = get_value(df, weekhour, loc)
+        forward_average = get_forward_average(fmean, weekhour, week_hour_value, nan_feature)
+        df.at[loc, nan_feature] = forward_average
+
+
+
+
+
+
